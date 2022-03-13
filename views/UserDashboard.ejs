@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        .header {
+            padding: 10px;
+            background-color: rgb(66, 64, 64);
+            color: white;
+            text-align: center;
+
+        }
+
+    
+
+        .container {
+            border: 2px solid black;
+            width: 75%;
+            margin: 0 auto;
+            
+
+        }
+
+        .title {
+            background-color: rgb(66, 64, 64);
+            color: rgb(231, 210, 19);
+            padding: 50px;
+            text-align: center;
+        }
+       
+        table{
+            width:100%;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 5px;
+            text-align: left;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgb(216, 213, 213);
+        }
+    </style>
+    <title>UserDashboard</title>
+
+</head>
+
+<body>
+    <div class="header">
+        <h1>USER DASHBOARD</h1>
+        <h3>USER: <%= user %></h3>
+        <form action="/userLogout" method="post">
+            <button type="submit">Logout</button>
+        </form>
+    </div>
+
+
+
+    <div class="container">
+        <div class="title">
+            <h1>TASK LIST</h1>
+        </div>
+        <div class="tasktable">
+            <table>
+                <tr>
+                    <th>Sno.</th>
+                    <th>Title</th>
+                    <th>Project</th>
+                    <th>Description</th>
+                    <th>Assigned By</th>
+                    <th>Status</th>
+                </tr>
+                <tr>
+                    <% for(var i=0; i<taskList.length ;i++){ %>
+                        <tr>
+                           
+                            <td><%= taskList[i].sno %>.</td>
+                            <td><%= taskList[i].title %></td>
+                            <td><%= taskList[i].project %></td>
+                            <td><%= taskList[i].description %></td>
+                            <td><%= taskList[i].assignedby %></td>
+                            <td><%= taskList[i].status %>
+                            <form action="/changeStatus" method="post">
+                                <select id="change" onChange="this.form.submit()" name="newChange">
+                                    <option value="" selected="true" disabled="disabled">change</option>
+                                    
+                                    <option value="<%= taskList[i].sno %>,Started">Started</option>
+                                    <option value="<%= taskList[i].sno %>,Ongoing">Ongoing</option>
+                                    <option value="<%= taskList[i].sno %>,InQA">InQA</option>
+                                    <option value="<%= taskList[i].sno %>,Completed">Completed</option>
+
+                               </select>
+                            </form>
+                        </td>
+                            
+                        </tr>
+                        <% } %>
+         
+            </table>
+        </div>
+    </div>
+
+
+
+</body>

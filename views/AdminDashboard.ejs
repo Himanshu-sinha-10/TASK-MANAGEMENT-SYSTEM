@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+  
+
+        .header{
+            padding:10px;
+            background-color: rgb(66, 64, 64);
+            color: white;
+            text-align: center;
+
+        }
+        .sub-container-left {
+            border: 2px solid black;
+            width: 49%;
+            margin: 0 auto;
+            float: left;
+        }
+
+        .sub-container-right {
+            border: 2px solid black;
+            width: 49%;
+            margin: 0 auto;
+            float: right;
+
+        }
+
+        .title {
+            background-color: rgb(66, 64, 64);
+            color: rgb(231, 210, 19);
+            padding: 50px;
+            text-align: center;
+        }
+
+        #form-popup {
+            border: 2px solid black;
+            position: absolute;
+            top: 25%;
+            left: 35%;
+            background-color: white;
+            display: none;
+
+
+        }
+
+        .form-pop-heading{
+            padding : 10px;
+            background-color: rgb(66, 64, 64);
+            color: rgb(231, 210, 19);
+            margin-top: 0;
+            text-align: center;
+
+        }
+        .row{
+            width:100%;
+            padding: 5px;
+            margin: 3px;
+        }
+        table{
+            width:100%;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid;
+            border-collapse: collapse;
+            
+        }
+
+        th,
+        td {
+            padding: 5px;
+            text-align: left;
+        }
+        tr:nth-child(even){
+            background-color: rgb(216, 213, 213);
+        }
+
+        .row{
+            padding: 5px;
+            margin: 3px;
+
+        }
+    </style>
+    <title>AdminDashboard</title>
+
+</head>
+
+<body>
+    <div class="header">
+        <h1>ADMIN DASHBOARD</h1>
+        <h3>USER: <%= admin %></h3>
+        <form action="/adminLogout" method="post">
+            <button type="submit">Logout</button>
+        </form>
+    </div>
+    <div class="container">
+        <div class="sub-container-left">
+            <div class="title">
+                <h1>ONGOING PROJECTS</h1>
+            </div>
+            <% for(var i=0; i<projectList.length ;i++){ %>
+            <div class="projectList">
+                <ul>
+                    <li>
+                        <h3><%=  projectList[i].title  %></h3>
+
+                    </li>
+                </ul>
+            </div>
+            <% } %>
+
+            <div>
+                <button id="create-btn">
+                    Create Task
+                </button>
+                <button id="close">
+                    Close
+                </button>
+                
+
+
+  
+            </div>
+
+        </div>
+
+        <div class="sub-container-right">
+            <div class="title">
+                <h1>TASK LIST</h1>
+            </div>
+            
+            <div class="tasktable">
+                <table>
+                    <tr>
+                        <th>Sno.</th>
+                        <th>Title</th>
+                        <th>Project</th>
+                        <th>Description</th>
+                        <th>Assigned to</th>
+                        <th>Status</th>
+                    </tr>
+                    <% for(var i=0; i<taskList.length ;i++){ %>
+                    <tr>
+                       
+                        <td><%= taskList[i].sno %>.</td>
+                        <td><%= taskList[i].title %></td>
+                        <td><%= taskList[i].project %></td>
+                        <td><%= taskList[i].description %></td>
+                        <td><%= taskList[i].assignedto %></td>
+                        <td><%= taskList[i].status %></td>
+                        
+                    </tr>
+                    <% } %>
+            
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="form-popup">
+
+           <h1 class="form-pop-heading">CREATE TASK</h1>
+        <form class="form" action="/createTask" method="post">
+            <div class="row">
+                <label for="project">For Project</label>
+                <select id="project" name= "project">
+                    <option value="" selected="true" disabled="disabled">Projects</option>
+                    <% for(var i=0; i<projectList.length ;i++){ %>
+                    <option value="<%= projectList[i].title %>"><%= projectList[i].title %></option>
+                    <% } %>
+                  
+                </select>
+            </div>
+            <div class="row">
+                <label for="taskTitle">Title:</label>
+                <input type="text" name="taskTitle" id="taskTitle">
+            </div>
+            <div class="row">
+                <label for="taskDescription">Description:</label>
+                <textarea name="taskDescription" id="taskDescription" cols="30" rows="10"></textarea>
+            </div>
+            <div class="row">
+                <label for="assignTo">Assign to:</label>
+                <select id="assignTo" name="taskUser">
+                    <option value="" selected="true" disabled="disabled">Users</option>
+                    <% for(var i=0; i<userList.length ;i++){ %>
+                    <option value="<%= userList[i].email %>"><%= userList[i].email %></option>
+                    <% } %>
+
+                </select>  
+            </div>
+          
+            <div class="row">
+                <button id="assign" type="submit">Assign</button>
+            </div>
+           
+        </form>
+
+    </div>
+    <script>
+
+        let createButton = document.getElementById("create-btn");
+        let widgetSubmitButton = document.getElementById("assign");
+        var form = document.getElementById("form-popup");
+        let widgetCloseButton = document.getElementById("close");
+        let homebtn = document.getElementById("home");
+
+        const showForm = function () {
+
+            form.style.display = "block";
+
+        }
+
+        const closeForm = function () {
+
+            form.style.display = "none";
+
+
+        }
+
+        const goHome = function() {
+            location.href = "localhost:3000";
+        }
+
+        
+    
+
+
+        createButton.addEventListener("click", showForm);
+        widgetSubmitButton.addEventListener("click", closeForm);
+        widgetCloseButton.addEventListener("click",closeForm);
+        widgetCloseButton.addEventListener("click",goHome);
+
+
+
+
+    </script>
+</body>
+
+</html>

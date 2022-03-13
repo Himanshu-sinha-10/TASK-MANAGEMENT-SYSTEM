@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>RegisterUser</title>
+    <style>
+
+  
+          .container{
+              border: 2px solid black;
+              width: 50%;
+              margin: 0 auto;
+
+          }
+          .row{
+              padding: 20px;
+              /* border: 2px solid red; */
+          }
+          .title{
+              background-color: rgb(66, 64, 64);
+              color: rgb(231, 210, 19);
+              padding: 50px;
+              text-align: center;
+          }
+          input[type=email]
+          {
+              padding: 5px;
+              width: 100%;
+          }
+          input[type=password]
+          {
+              padding: 5px;
+              width: 100%;
+          }
+          button[type=submit]{
+                width: 100%;
+                padding: 10px;
+                font-size: 20px;
+
+          }
+          label{
+              font-size: 20px;
+          }
+
+          button[type=submit]:hover{
+            background-color: rgb(66, 64, 64);
+            color:rgb(231, 210, 19);
+          }
+
+    </style>
+</head>
+
+<body>
+
+
+    <div class="container">
+        <div class="title">
+            <h1>Register User</h1>
+        </div>
+        <form action="/registerUser" method="post">
+        <div class="row email">
+            <label for="adminEmail">Email: </label>
+            <input type="email" name="email" id="adminEmail" required>
+        </div>
+        <div class="row password">
+            <label for="adminPassword">Password: </label>
+            <input type="password" name="password" id="adminPassword" required pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+            title="Must contain at least one number and one uppercase and lowercase letter, and at least 8 or more characters">
+        </div>
+        <div class="row button">
+            <button type="submit">Register</button>
+        </div>
+    </form>
+    </div>
+</body>
+
+</html>
