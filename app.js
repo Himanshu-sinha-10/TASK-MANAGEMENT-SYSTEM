@@ -2,33 +2,31 @@ const express = require("express");
 const ejs = require("ejs");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const encrypt = require("mongoose-encryption");
-let alert = require('alert');
-const cookieParser = require("cookie-parser");
-const { constants } = require("crypto");
-var thisAdmin;
-var thisUser;
-var counter = 1;
-var currentSessionAdmin = false;
-var currentSessionUser = false;
-
-
-
-
-
-
+const session = require("express-session");
+const passport = require("passport");
+const passportLocalMongoose = require("passport-local-mongoose");
 
 
 
 const app = express();
 
+
+app.set('view engine', 'ejs');
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(
+    session({
+        secret: process.env.SECRET,
+        resave: false,
+        saveUninitialized: false,
+    })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
 mongoose.connect('mongodb://localhost:27017/taskManagementDB', { useNewUrlParser: true });
 
-const adminSchema = new mongoose.Schema({
-    name: String,
-    email: String,
-    password: String
-});
+
 
 const projectSchema = new mongoose.Schema({
     pid: Number,
@@ -46,36 +44,28 @@ const taskSchema = new mongoose.Schema({
 });
 
 const userSchema = new mongoose.Schema({
-    name: String,
-    email: String,
+   
+    username: String,
     password: String,
+    role: String
 
 });
 
-const secret = "Thisisourlittlesecret.";
-adminSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
-userSchema.plugin(encrypt, { secret: secret, encryptedFields: ["password"] });
 
-const Admin = mongoose.model('Admin', adminSchema);
+
+userSchema.plugin(passportLocalMongoose);
+
+
 const Project = mongoose.model('Project', projectSchema);
 const Task = mongoose.model('Task', taskSchema);
 const User = mongoose.model('User', userSchema);
 
 
+passport.use(User.createStrategy());
 
 
-
-
-
-
-
-
-
-app.set('view engine', 'ejs');
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
 
 
 
@@ -95,7 +85,7 @@ app.get("/registerUser", function (req, res) {
 });
 
 app.get("/AdminLogin", function (req, res) {
-    // currentSessionAdmin = true;
+    
     res.render("AdminLogin");
 });
 
@@ -105,16 +95,16 @@ app.get("/UserLogin", function (req, res) {
 
 
 app.get("/AdminDashboard", function (req, res) {
-     thisAdmin = req.cookies["email"];
-    if (currentSessionAdmin === "true") {
-       
+
+    if (req.isAuthenticated()) {
+
         Project.find({}, function (err, projects) {
 
             Task.find({}, function (err, tasks) {
 
-                User.find({}, function (err, users) {
+                User.find({role: "USER"}, function (err, users) {
 
-                    res.render("AdminDashboard", { projectList: projects, taskList: tasks, userList: users, admin: thisAdmin });
+                    res.render("AdminDashboard", { projectList: projects, taskList: tasks, userList: users, admin: req.user.username });
 
                 });
 
@@ -124,30 +114,23 @@ app.get("/AdminDashboard", function (req, res) {
         });
     } else {
         res.redirect("/AdminLogin");
-    }
+    }  
 
 });
 
 app.get("/UserDashboard", function (req, res) {
-    
-    thisUser = req.cookies["email"];
-    
-    res.clearCookie("email", { httpOnly: true });
-    if (currentSessionUser === "true") {
-        // conetext = "false";
 
+    if (req.isAuthenticated()) {
 
-        Task.find({ assignedto: thisUser }, function (err, tasks) {
+        Task.find({ assignedto: req.user.username }, function (err, tasks) {
             if (err) {
                 console.log(err);
             } else {
 
-                res.render("UserDashboard", { taskList: tasks, user: thisUser });
+                res.render("UserDashboard", { taskList: tasks, user: req.user.username });
             }
 
         });
-
-
     } else {
         res.redirect("/UserLogin");
     }
@@ -180,57 +163,33 @@ app.post("/", function (req, res) {
 
 app.post("/registerAdmin", function (req, res) {
 
-    Admin.findOne({ email: req.body.email }, function (err, foundAdmin) {
-        if (foundAdmin) {
-            alert("Admin already exists, Kindly Login.");
-            res.redirect("/AdminLogin");
-        }
-        else {
-            const newAdmin = new Admin({
-                email: req.body.email,
-                password: req.body.password
-            });
-
-            newAdmin.save(function (err) {
-                if (err) {
-                    console.log(err);
-                } else {
-
-                    // res.cookie("auth", "true", { httpOnly: true });
-                    res.redirect('/AdminLogin');
-                }
+    User.register({ username: req.body.username, role: "ADMIN"}, req.body.password, (err, user) => {
+        if (err) {
+            console.log(err);
+            res.redirect("/registerAdmin");
+        } else {
+            passport.authenticate("local")(req, res, () => {
+                res.redirect("/AdminDashboard");
+              
+                
             });
         }
     });
-
 });
+
+
 
 app.post("/registerUser", function (req, res) {
 
-    User.findOne({ email: req.body.email }, function (err, foundUser) {
+
+    User.register({ username: req.body.username,role: "USER" }, req.body.password, (err, user) => {
         if (err) {
             console.log(err);
+            res.redirect("/registerUser");
         } else {
-            if (foundUser) {
-                alert("User already exists, Kindly Login.");
-                res.redirect("/UserLogin");
-            }
-            else {
-                const newUser = new User({
-                    email: req.body.email,
-                    password: req.body.password
-                });
-
-                newUser.save(function (err) {
-                    if (err) {
-                        console.log(err);
-                    } else {
-
-
-                        res.redirect('/UserLogin');
-                    }
-                });
-            }
+            passport.authenticate("local")(req, res, () => {
+                res.redirect("/UserDashboard");
+            });
         }
     });
 
@@ -239,67 +198,95 @@ app.post("/registerUser", function (req, res) {
 
 
 app.post("/AdminLogin", function (req, res) {
-    thisAdmin = req.body.email;
 
-    const thisPassword = req.body.password;
-    Admin.findOne({ email: thisAdmin }, function (err, foundAdmin) {
-        if (err) {
-            console.log(err);
-        } else {
-            if ((foundAdmin) && (foundAdmin.password === thisPassword)) {
-                currentSessionAdmin = "true";
-                res.cookie("email", thisAdmin, { httpOnly: true });
-                res.redirect('/AdminDashboard');
-
-
-            } else {
-
-                res.send("Invalid Email/Password.");
-            }
-        }
-
-
+    const user = new User({
+        username: req.body.username,
+        password: req.body.password,
+        
     });
+
+    User.find({username: req.body.username},function(err,foundUser){
+          if(err)
+          {
+              console.log(err);
+          }
+          else if(foundUser.length === 0)
+          {
+              res.send("User Not found");
+          }
+          else{
+              
+            req.login(user, (err) => {
+                if (err) {
+                  
+                    console.log(err);
+                } else {
+                    passport.authenticate("local")(req, res, function(){
+                        res.redirect("/AdminDashboard");
+                    });
+                }
+            });
+          }
+    });
+    
+  
+   
 
 });
 
+
+
+
 app.post("/UserLogin", function (req, res) {
-    thisUser = req.body.email;
-    
-    const thisPassword = req.body.password;
-    User.findOne({ email: thisUser }, function (err, foundUser) {
-        if (err) {
-            console.log(err);
-        } else {
-            if ((foundUser) && (foundUser.password === thisPassword)) {
-                
-                currentSessionUser = "true";
-                res.cookie("email", thisUser, { httpOnly: true });
-                res.redirect('/UserDashboard');
 
-            } else {
-
-                res.send("Invalid Email/Password.");
-            }
-        }
+    const user = new User({
+        username: req.body.username,
+        password: req.body.password,
+        
     });
+   
+    User.find({username: req.body.username},function(err,foundUser){
+        if(err)
+        {
+            console.log(err);
+        }
+        else if(foundUser.length === 0)
+        {
+            res.send("User Not found");
+        }
+        else{
+            
+          req.login(user, (err) => {
+              if (err) {
+                
+                  console.log(err);
+              } else {
+                  passport.authenticate("local")(req, res, function(){
+                      res.redirect("/UserDashboard");
+                  });
+              }
+          });
+        }
+  });
+  
+   
 
 });
 
 
 app.post("/createTask", function (req, res) {
-
+  
     const Taskproject = req.body.project;
     const Tasktitle = req.body.taskTitle;
     const Taskdescription = req.body.taskDescription;
     const Taskuser = req.body.taskUser;
-    const Taskcreater = thisAdmin;
+    const Taskcreater = req.user.username;
 
-    Task.find().countDocuments({},function (err, count) {
+    Task.find().countDocuments({}, function (err, count) {
         if (err) console.log(err);
         else {
-           
-            currentSerialNo = count+1;
+
+            currentSerialNo = count + 1;
 
             const newTask = new Task({
                 sno: currentSerialNo,
@@ -317,8 +304,8 @@ app.post("/createTask", function (req, res) {
                 if (err) {
                     console.log(err);
                 } else {
-                    
-                    res.cookie("auth", "true", { httpOnly: true });
+
+                 
                     res.redirect('/AdminDashboard');
                 }
             });
@@ -328,7 +315,7 @@ app.post("/createTask", function (req, res) {
 });
 
 app.post("/changeStatus", function (req, res) {
-    var value = req.body.newChange;
+    const value = req.body.newChange;
     const splitArray = value.split(",");
     const selectedSno = splitArray[0];
     const newStatus = splitArray[1];
@@ -350,12 +337,12 @@ app.post("/changeStatus", function (req, res) {
 });
 
 app.post("/adminLogout", function (req, res) {
-    currentSessionAdmin = "false";
+    req.logout();
     res.redirect("/");
 });
 
 app.post("/userLogout", function (req, res) {
-    currentSessionUser = "false";
+    req.logout();
     res.redirect("/");
 });
 
